@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Anatolia — Command Center v5.0</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { 
+      --bg: #0f172a; 
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --accent: #0f766e;
+      --green: #10b981; 
+      --blue: #3b82f6; 
+      --red: #ef4444;
+      --yellow: #eab308;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: 'Inter', sans-serif; 
+      margin: 0; 
+      background: var(--bg); 
+      color: var(--text-main); 
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    /* Header */
+    header { 
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      padding: 24px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+    .logo span { color: var(--green); }
+    .status-bar { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; }
+    .status-dot { width: 10px; height: 10px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+
+    /* Navigation */
+    nav { 
+      background: var(--card-bg);
+      display: flex; 
+      gap: 8px;
+      padding: 12px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    nav button { 
+      background: transparent;
+      color: var(--text-sub);
+      border: none;
+      padding: 10px 24px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    nav button.active { background: var(--accent); color: #fff; }
+    nav button:hover:not(.active) { background: rgba(255,255,255,0.05); }
+
+    /* Main Content */
+    .view { padding: 32px; max-width: 1400px; margin: 0 auto; }
+    .hidden { display: none !important; }
+    
+    /* Cards Grid */
+    .grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); 
+      gap: 24px; 
+    }
+    
+    .card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3);
+    }
+    
+    .card-header { padding: 16px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, #2d3b4e 0%, #1e293b 100%); }
+    .card-image { height: 180px; width: 100%; object-fit: cover; background: #2d3b4e; }
+    .card-body { padding: 20px; }
+
+    /* Badges */
+    .badge { 
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.6rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .badge-line { background: #3b82f6; color: white; }
+    .badge-status { background: var(--accent); color: #fff; }
+    
+    /* Data Rows */
+    .row { margin-bottom: 12px; }
+    .lbl { 
+      font-size: 0.55rem; 
+      font-weight: 700; 
+      text-transform: uppercase; 
+      color: var(--text-sub); 
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    .val { 
+      font-size: 0.9rem; 
+      font-weight: 600; 
+      color: var(--text-main);
+    }
+    .val small {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      margin-left: 6px;
+    }
+
+    /* R&D Tags */
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .tag { 
+      font-size: 0.65rem;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.08);
+      color: var(--text-sub);
+    }
+    .tag.active { background: var(--green); color: white; }
+
+    /* Buttons */
+    .btn {
+      border: none;
+      padding: 12px 20px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { background: var(--green); color: white; width: 100%; }
+    .btn-primary:hover { background: #059669; }
+    .btn-secondary { background: var(--border); color: var(--text-main); width: 100%; }
+    .btn-secondary:hover { background: #475569; }
+
+    /* Add Card */
+    .card-empty { 
+      border: 2px dashed var(--border);
+      background: rgba(15,23,42,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-sub);
+    }
+    .card-empty:hover { border-color: var(--green); background: rgba(16,185,129,0.1); color: var(--green); cursor: pointer; }
+
+    /* Modal */
+    #modal { 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(15,23,42,0.7); backdrop-filter: blur(8px);
+      z-index: 1000; display: none; padding: 24px; 
+    }
+    .modal-content {
+      background: var(--card-bg);
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      border-radius: 20px;
+      box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+    .modal-header { padding: 24px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, #2d3b4e 0%, #1e293b 100%); }
+    .modal-title { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: -0.02em; }
+    .modal-body { padding: 24px; max-height: 70vh; overflow-y: auto; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 0.55rem; font-weight: 700; text-transform: uppercase; color: var(--text-sub); letter-spacing: 0.05em; }
+    input, select {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.75rem;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 2px rgba(16,185,129,0.3); }
+    
+    /* Checkboxes for trials */
+    .check-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+    .check-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.65rem;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .check-label input { width: auto; accent-color: var(--green); }
+
+    /* Search bar */
+    .search-bar { margin-bottom: 24px; }
+    .search-bar input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: white;
+    }
+
+    /* Table for history */
+    table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 12px; overflow: hidden; }
+    th { background: #1e293b; padding: 14px; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-sub); border-bottom: 2px solid #334155; }
+    td { padding: 14px; font-size: 0.7rem; border-bottom: 1px solid var(--border); color: #cbd5e1; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <div class="logo">ANATOLIA<span>.cc</span></div>
+    <div class="status-bar">
+      <div id="status-dot" class="status-dot"></div>
+      <span id="status-text">INITIALIZING...</span>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <button id="nav-live" class="active" onclick="setView('live')">Live Production</button>
+  <button id="nav-trials" onclick="setView('trials')">R&D Trials</button>
+  <button id="nav-history" onclick="setView('history')">History</button>
+</nav>
+
+<div class="view">
+  <!-- Live Production View -->
+  <div id="view-live"><div class="grid" id="live-container"></div></div>
+  
+  <!-- R&D Trials View -->
+  <div id="view-trials" class="hidden"><div class="grid" id="trial-container"></div></div>
+  
+  <!-- History View -->
+  <div id="view-history" class="hidden">
+    <div class="search-bar">
+      <input type="text" id="search" placeholder="Search products..." oninput="renderHistory()">
+    </div>
+    <div id="history-table"></div>
+  </div>
+</div>
+
+<!-- Modal for Adding New Entries -->
+<div id="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modal-title" class="modal-title">New Entry</h2>
+    </div>
+    <div class="modal-body">
+      <div id="form-fields" class="form-grid"></div>
+      
+      <!-- R&D Extra Fields -->
+      <div id="trial-extras" class="hidden">
+        <label style="margin-top: 24px; font-size: 0.6rem; text-transform: uppercase; color: var(--text-sub);">Ink Effects & Digital Graphic</label>
+        <div class="check-grid">
+          <label class="check-label"><input type="checkbox" id="chk-Digital_White_1"> 1 Digital White</label>
+          <label class="check-label"><input type="checkbox" id="chk-Digital_White_2"> 2 Digital White</label>
+          <label class="check-label"><input type="checkbox" id="chk-Glu"> Glu</label>
+          <label class="check-label"><input type="checkbox" id="chk-Gloss"> Gloss</label>
+        </div>
+      </div>
+    </div>
+    <div style="padding: 24px; border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEntry()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Product catalog extracted from Anatolia/Aeterna
+const PRODUCT_CATALOG = [
+  // Lustra Onyx Series
+  { name: "Lustra Onyx Feather", sizes: ["1200x1200", "600x1200"], surfaces: ["Polished", "Honed"] },
+  { name: "Lustra Onyx Crema", sizes: ["1200x1200"], surfaces: ["Polished"] },
+  { name: "Lustra Onyx Sage", sizes: ["1200x1200", "600x1200"], surfaces: ["Polished"] },
+  
+  // Serena Series
+  { name: "Serena Crater", sizes: ["1200x1200"], surfaces: ["Honed"] },
+  { name: "Serena Valley", sizes: ["1200x1200"], surfaces: ["Honed"] },
+  
+  // Lithoform Series
+  { name: "Lithoform Crosscut Twilight", sizes: ["1200x1200"], surfaces: ["Honed"] },
+  { name: "Lithaform Crosscut Vista Organic", sizes: ["600x1200"], surfaces: ["Matte"] },
+  
+  // Atlantic Series
+  { name: "Atlantic Ocean", sizes: ["600x1200"], surfaces: ["Polished"] },
+  { name: "Majesto Atlantic Ocean", sizes: ["600x1200"], surfaces: ["Polished"] },
+  
+  // Taj Mahal
+  { name: "Taj Mahal", sizes: ["1200x1200"], surfaces: ["Polished"] },
+  
+  // Aeterna Collections (Placeholder images)
+  { name: "Aeterna Obsidian", sizes: ["1200x2600", "1200x3200"], surfaces: ["Polished", "Honed", "Matte"] },
+  { name: "Aeterna Marbleia", sizes: ["1200x2600"], surfaces: ["Polished"] },
+  { name: "Aeterna Terracotta", sizes: ["1200x2600"], surfaces: ["Honed"] },
+];
+
+const API_URL = "https://script.google.com/macros/s/AKfycbzv2NLG2w_nfLrgwiLBhu38q13cv5R_SE_L8SEHTEwOuspL3XumQjDES1WdcsnUTSZ5/exec";
+const COLS = ["Date", "Production_Line", "Product_Name", "Size", "Surface", "Body_Code", "Engobe_Name", "Engobe_Density", "Engobe_Grammage", "Glaze_Name", "Glaze_Density", "Glaze_Grammage", "Kiln_Temp", "Kiln_Min", "Drying_Duration", "Drying_Temp", "Status"];
+const LINCES = ["Line 1", "Line 2", "Line 3"];
+const BODIES = ["LC BODY", "LW BODY", "R6 BODY", "R7 BODY", "D 11 C BODY"];
+
+// Image mapper (using placeholder images with product names)
+function getProductImage(productName) {
+  const base = productName.replace(/\s+/g, '').toLowerCase();
+  // Using aeternasurfaces placeholders - in production replace with actual URLs
+  return `https://placehold.co/600x360/1e293b/475569?text=${encodeURIComponent(productName)}&font=roboto`;
+}
+
+let state = { view: 'live', history: [], trials: [] };
+
+function loadData() {
+  document.getElementById('status-text').innerText = "SYNCING...";
+  const script = document.createElement('script');
+  script.src = `${API_URL}?callback=handleResponse&t=${Date.now()}`;
+  document.body.appendChild(script);
+}
+
+window.handleResponse = function(data) {
+  state.history = data.history || [];
+  state.trials = data.trials || [];
+  document.getElementById('status-text').innerText = "CONNECTED";
+  render();
+};
+
+function setView(v) {
+  state.view = v;
+  document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+  document.getElementById(`view-${v}`).classList.remove('hidden');
+  document.getElementById(`nav-${v}`).classList.add('active');
+  render();
+}
+
+function render() {
+  // Live Production
+  const live = state.history.filter(i => String(i.Status).trim().toLowerCase() === "in production");
+  document.getElementById('live-container').innerHTML = live.map(i => renderCard(i, "live")).join('') + renderAddCard("Live Production");
+  
+  // Trials
+  const trials = state.history.filter(i => String(i.Status).trim().toLowerCase() === "trial");
+  document.getElementById('trial-container').innerHTML = trials.map(i => renderCard(i, "trial")).join('') + renderAddCard("Trial");
+  
+  // History
+  if (state.view === 'history') renderHistory();
+}
+
+function renderCard(i, mode) {
+  const image = getProductImage(i.Product_Name || '');
+  
+  // Get trial extras if exists
+  const t = state.trials.find(x => x.Product_Name === i.Product_Name) || {};
+  
+  return `
+    <div class="card">
+      <img src="${image}" class="card-image" alt="${i.Product_Name}">
+      <div class="card-header">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="badge badge-line">${i.Production_Line || ''}</span>
+          <span class="badge badge-status">${i.Status || ''}</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3 style="margin:0 0 16px; font-size:1.1rem;">${i.Product_Name || 'Unknown'}</h3>
+        
+        <div class="row">
+          <span class="lbl">Product</span>
+          <span class="val">${i.Product_Name || '—'}</span>
+        </div>
+        
+        <div class="row">
+          <span class="lbl">Dimensions</span>
+          <span class="val">${i.Size || '—'}</span>
+        </div>
+        
+        <div class="row">
+          <span class="lbl">Surface Finish</span>
+          <span class="val">${i.Surface || '—'}${i.Size ? '<small>' + i.Size + '</small>' : ''}</span>
+        </div>
+        
+        <div class="row">
+          <span class="lbl">Body Code</span>
+          <span class="val">${i.Body_Code || '—'}</span>
+        </div>
+        
+        <div class="row">
+          <span class="lbl">Engobe</span>
+          <span class="val">${i.Engobe_Name || '—'}<small>${i.Engobe_Density || ''} / ${i.Engobe_Grammage || ''}</small></span>
+        </div>
+        
+        <div class="row">
+          <span class="lbl">Glaze</span>
+          <span class="val">${i.Glaze_Name || '—'}<small>${i.Glaze_Density || ''} / ${i.Glaze_Grammage || ''}</small></span>
+        </div>
+        
+        <div class="row">
+          <span class="lbl">Kiln Settings</span>
+          <span class="val">${i.Kiln_Temp || '—'}°C / ${i.Kiln_Min || '—'}min</span>
+        </div>
+        
+        <div class="row">
+          <span class="lbl">Drying</span>
+          <span class="val">${i.Drying_Duration || '—'}min / ${i.Drying_Temp || '—'}°C</span>
+        </div>
+        
+        ${mode === 'trial' ? `
+          <div class="row">
+            <span class="lbl">Digital Features</span>
+            <div class="tags">
+              ${t.Digital_White_1 ? '<span class="tag active">DW1</span>' : '<span class="tag">DW1</span>'}
+              ${t.Digital_White_2 ? '<span class="tag active">DW2</span>' : '<span class="tag">DW2</span>'}
+              ${t.Glu ? '<span class="tag active">GLU</span>' : '<span class="tag">GLU</span>'}
+              ${t.Gloss ? '<span class="tag active">GLOSS</span>' : '<span class="tag">GLOSS</span>'}
+            </div>
+          </div>` : ''}
+        
+        <button class="btn ${mode === 'live' ? 'btn-primary' : 'btn-secondary'}" onclick="updateStatus('${encodeURIComponent(i.Product_Name)}', '${mode === 'live' ? 'Produced' : 'In Production'}')" style="margin-top: 16px;">
+          ${mode === 'live' ? 'Archive Production' : 'Promote to Live'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderAddCard(s) {
+  return `<div class="card card-empty" onclick="openModal('${s}')">
+            <div style="text-align:center;">
+              <span style="font-size:3rem; display:block; margin-bottom:8px;">+</span>
+              <span style="font-weight:700; letter-spacing:0.1em;">NEW ${s.toUpperCase()}</span>
+            </div>
+          </div>`;
+}
+
+function renderHistory() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const histItems = state.history.filter(i => 
+    String(i.Status).trim().toLowerCase() === "produced" && 
+    (i.Product_Name || '').toLowerCase().includes(search)
+  );
+  
+  let html = '<table><thead><tr>';
+  COLS.forEach(c => html += `<th>${c.replace('_', ' ')}</th>`);
+  html += '</tr></thead><tbody>';
+  
+  histItems.forEach(row => {
+    html += '<tr>';
+    COLS.forEach(c => {
+      const val = row[c] || '—';
+      html += `<td>${val}</td>`;
+    });
+    html += '</tr>';
+  });
+  
+  document.getElementById('history-table').innerHTML = html + '</tbody></table>';
+}
+
+function openModal(status) {
+  state.curStatus = status;
+  document.getElementById('modal').style.display = 'flex';
+  
+  // Build form fields with dropdowns
+  const isTrial = status.toLowerCase() === 'trial';
+  let html = '';
+  
+  // Common fields
+  const commonFields = [
+    { name: 'Date', label: 'Production Date', type: 'date' },
+    { name: 'Production_Line', label: 'Production Line', type: 'select', options: LINCES },
+    { name: 'Product_Name', label: 'Product Name', type: 'select', options: PRODUCT_CATALOG.map(p => p.name), required: true },
+    { name: 'Size', label: 'Size', type: 'select', options: [] }, // Populated on product change
+    { name: 'Surface', label: 'Surface Finish', type: 'select', options: [] }, // Populated on product change
+    { name: 'Body_Code', label: 'Body Code', type: 'select', options: BODIES },
+    { name: 'Engobe_Name', label: 'Engobe Name', type: 'text' },
+    { name: 'Engobe_Density', label: 'Engobe Density', type: 'text' },
+    { name: 'Engobe_Grammage', label: 'Engobe Grammage', type: 'text' },
+    { name: 'Glaze_Name', label: 'Glaze Name', type: 'text' },
+    { name: 'Glaze_Density', label: 'Glaze Density', type: 'text' },
+    { name: 'Glaze_Grammage', label: 'Glaze Grammage', type: 'text' },
+    { name: 'Kiln_Temp', label: 'Kiln Temperature (°C)', type: 'text' },
+    { name: 'Kiln_Min', label: 'Kiln Minutes', type: 'text' },
+    { name: 'Drying_Duration', label: 'Drying Duration (min)', type: 'text' },
+    { name: 'Drying_Temp', label: 'Drying Temperature (°C)', type: 'text' },
+    { name: 'Status', type: 'hidden', value: status }
+  ];
+  
+  commonFields.forEach(f => {
+    if (f.type === 'hidden') return;
+    
+    let input = '';
+    if (f.type === 'select') {
+      const options = (f.name === 'Product_Name' ? PRODUCT_CATALOG : f.options || []).map(o => 
+        `<option value="${o}">${typeof o === 'object' ? o.name : o}</option>`
+      ).join('');
+      input = `<select id="inp-${f.name}" onchange="${f.name === 'Product_Name' ? 'onProductChange(this.value)' : ''}">
+        <option value="">Select...</option>${options}</select>`;
+    } else {
+      input = `<input type="${f.type}" id="inp-${f.name}" placeholder="${f.label}" ${f.required ? 'required' : ''}>`;
+    }
+    
+    html += `<div class="form-group">
+      <label>${f.label}</label>
+      ${input}
+    </div>`;
+  });
+  
+  document.getElementById('form-fields').innerHTML = html;
+  document.getElementById('modal-title').innerText = `New ${status}`;
+  
+  // Trial extras
+  if (isTrial) document.getElementById('trial-extras').classList.remove('hidden');
+  else document.getElementById('trial-extras').classList.add('hidden');
+}
+
+// Populate sizes/surfaces when product is selected
+function onProductChange(productName) {
+  const product = PRODUCT_CATALOG.find(p => p.name === productName);
+  if (product) {
+    // Update sizes dropdown
+    const sizeSelect = document.getElementById('inp-Size');
+    if (sizeSelect) {
+      sizeSelect.innerHTML = product.sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+    
+    // Update surfaces dropdown
+    const surfaceSelect = document.getElementById('inp-Surface');
+    if (surfaceSelect) {
+      surfaceSelect.innerHTML = product.surfaces.map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+  }
+}
+
+function submitEntry() {
+  let p = { method: "SAVE" };
+  COLS.forEach(c => {
+    const el = document.getElementById(`inp-${c}`);
+    if (el) p[c] = el.value;
+  });
+  
+  if (state.curStatus.toLowerCase() === 'trial') {
+    ["Digital_White_1", "Digital_White_2", "Glu", "Gloss"].forEach(id => {
+      p[id] = document.getElementById(`chk-${id}`).checked ? "TRUE" : "FALSE";
+    });
+  }
+  
+  // Fetch without CORS
+  fetch(`${API_URL}?${new URLSearchParams(p).toString()}`, { mode: 'no-cors' })
+    .then(() => {
+      setTimeout(() => { closeModal(); loadData(); }, 1200);
+    })
+    .catch(err => {
+      console.error('Save error:', err);
+      setTimeout(() => { closeModal(); loadData(); }, 1200);
+    });
+}
+
+function updateStatus(name, newStatus) {
+  fetch(`${API_URL}?method=UPDATE_STATUS&Product_Name=${name}&NewStatus=${newStatus}`, { mode: 'no-cors' })
+    .then(() => {
+      setTimeout(() => { loadData(); }, 1200);
+    });
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+// Initialize
+loadData();
+
+// Add product change handler to global scope
+window.onProductChange = onProductChange;
+</script>
+
+</body>
+</html>
